@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ホリエモン ミームジェネレーター</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ホリエモン ミームジェネレーター</h1>
+        <p class="subtitle">「すげぇ○○○らしいじゃん」画像を作ろう</p>
+
+        <div class="controls">
+            <div class="version-select">
+                <label>バージョン選択:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="version" value="normal" checked>
+                        <span class="radio-custom"></span>
+                        通常（ドヤ顔）
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="version" value="sad">
+                        <span class="radio-custom"></span>
+                        悲しい顔
+                    </label>
+                </div>
+            </div>
+
+            <div class="text-input-group">
+                <label for="memeText">テキストを入力（10〜20文字）:</label>
+                <input type="text" id="memeText" maxlength="20" placeholder="すげぇAI出すらしいじゃん">
+                <span class="char-count"><span id="charCount">0</span> / 20文字</span>
+            </div>
+
+            <button id="generateBtn" class="btn-generate">画像を生成する</button>
+        </div>
+
+        <div class="preview-area" id="previewArea" style="display: none;">
+            <h2>プレビュー</h2>
+            <canvas id="memeCanvas"></canvas>
+            <button id="downloadBtn" class="btn-download">画像をダウンロード</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
