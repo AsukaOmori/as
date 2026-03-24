@@ -127,6 +127,45 @@ function getSelectedVersion() {
     return document.querySelector('input[name="version"]:checked').value;
 }
 
+// --- Sample background color from edges of a row ---
+function sampleBgColor(imgData, y, w) {
+    // Sample pixels from left and right edges (avoid text in center)
+    const samples = [];
+    const sampleCols = [0, 1, 2, 3, 4, w - 5, w - 4, w - 3, w - 2, w - 1];
+    for (const x of sampleCols) {
+        const i = (y * w + x) * 4;
+        samples.push([imgData.data[i], imgData.data[i + 1], imgData.data[i + 2]]);
+    }
+    // Median of samples for each channel
+    const r = samples.map(s => s[0]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+    const g = samples.map(s => s[1]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+    const b = samples.map(s => s[2]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+    return [r, g, b];
+}
+
+// --- Erase subtitle by painting over with sampled background ---
+function eraseSubtitle(textTop, textBottom) {
+    const w = canvas.width;
+    const imgData = ctx.getImageData(0, 0, w, canvas.height);
+
+    // Gradient fade zone above the text area for smooth blending
+    const fadeHeight = Math.floor((textBottom - textTop) * 0.15);
+    const eraseTop = textTop - fadeHeight;
+
+    for (let y = eraseTop; y < textBottom; y++) {
+        const [r, g, b] = sampleBgColor(imgData, y, w);
+        // Fade-in factor: 0 at eraseTop, 1 at textTop
+        let alpha;
+        if (y < textTop) {
+            alpha = (y - eraseTop) / fadeHeight;
+        } else {
+            alpha = 1.0;
+        }
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        ctx.fillRect(0, y, w, 1);
+    }
+}
+
 // --- Generate meme ---
 function generateMeme() {
     const text = textInput.value.trim();
@@ -149,12 +188,13 @@ function generateMeme() {
         canvas.height = img.naturalHeight;
         ctx.drawImage(img, 0, 0);
 
-        const textAreaTop = Math.floor(canvas.height * 0.72);
-        const textAreaHeight = canvas.height - textAreaTop;
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, textAreaTop, canvas.width, textAreaHeight);
+        // Erase original subtitle area (approx 73%–97% of image height)
+        const textTop = Math.floor(canvas.height * 0.73);
+        const textBottom = Math.floor(canvas.height * 0.97);
+        eraseSubtitle(textTop, textBottom);
 
-        drawMemeText(text, textAreaTop, textAreaHeight);
+        // Draw new text in the same position as original
+        drawMemeText(text, textTop, textBottom);
 
         previewArea.style.display = 'block';
         previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -162,26 +202,49 @@ function generateMeme() {
     img.src = data;
 }
 
-function drawMemeText(text, areaTop, areaHeight) {
-    const maxWidth = canvas.width * 0.9;
+function drawMemeText(text, textTop, textBottom) {
+    const maxWidth = canvas.width * 0.92;
     const centerX = canvas.width / 2;
-    const centerY = areaTop + areaHeight * 0.55;
+    const centerY = textTop + (textBottom - textTop) * 0.5;
 
-    let fontSize = Math.floor(canvas.height * 0.09);
-    ctx.font = `bold ${fontSize}px 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif`;
+    // Start with a large font size, matching the original subtitle style
+    let fontSize = Math.floor(canvas.height * 0.10);
+    const fontFamily = "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif";
+    ctx.font = `900 ${fontSize}px ${fontFamily}`;
 
+    // Shrink if text is too wide
     while (ctx.measureText(text).width > maxWidth && fontSize > 20) {
         fontSize -= 2;
-        ctx.font = `bold ${fontSize}px 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif`;
+        ctx.font = `900 ${fontSize}px ${fontFamily}`;
     }
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.lineWidth = fontSize * 0.12;
+
+    // Shadow layer (offset shadow like TV subtitles)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = fontSize * 0.15;
+    ctx.shadowOffsetX = fontSize * 0.05;
+    ctx.shadowOffsetY = fontSize * 0.05;
+
+    // Black outline
+    ctx.lineWidth = fontSize * 0.08;
+    ctx.strokeStyle = '#000000';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeText(text, centerX, centerY);
+
+    // Yellow fill (matching original: warm golden yellow)
+    ctx.fillStyle = '#FFD700';
+    ctx.fillText(text, centerX, centerY);
+    ctx.restore();
+
+    // Second pass without shadow for crisper text
+    ctx.lineWidth = fontSize * 0.06;
     ctx.strokeStyle = '#000000';
     ctx.lineJoin = 'round';
     ctx.strokeText(text, centerX, centerY);
-
     ctx.fillStyle = '#FFD700';
     ctx.fillText(text, centerX, centerY);
 }
