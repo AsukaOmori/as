@@ -41,37 +41,45 @@ h1 {
     margin-bottom: 24px;
 }
 
-.image-upload-section {
-    margin-bottom: 20px;
+/* Setup panel */
+.setup-panel {
+    text-align: center;
 }
 
-.image-upload-section > label {
-    display: block;
+.setup-title {
     font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+}
+
+.setup-desc {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 20px;
 }
 
 .upload-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .upload-item {
     display: flex;
     align-items: center;
     gap: 10px;
+    justify-content: center;
 }
 
 .upload-label {
     min-width: 100px;
     font-size: 0.9rem;
     color: #aaa;
+    text-align: right;
 }
 
 .upload-btn {
-    padding: 6px 14px;
+    padding: 8px 16px;
     background: #444;
     color: #e0e0e0;
     border-radius: 6px;
@@ -91,9 +99,16 @@ h1 {
 
 .upload-status {
     font-size: 0.8rem;
+    color: #888;
+    min-width: 70px;
+    text-align: left;
+}
+
+.upload-status.done {
     color: #4caf50;
 }
 
+/* Version select */
 .version-select {
     margin-bottom: 20px;
 }
@@ -156,6 +171,7 @@ h1 {
     border-radius: 50%;
 }
 
+/* Text input */
 .text-input-group {
     margin-bottom: 20px;
 }
@@ -191,6 +207,7 @@ h1 {
     color: #888;
 }
 
+/* Buttons */
 .btn-generate {
     width: 100%;
     padding: 14px;
@@ -212,12 +229,23 @@ h1 {
     transform: scale(0.98);
 }
 
-.btn-generate:disabled {
-    background: #555;
-    color: #888;
-    cursor: not-allowed;
+.btn-reset {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background: transparent;
+    color: #666;
+    border: none;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s;
 }
 
+.btn-reset:hover {
+    color: #aaa;
+}
+
+/* Preview */
 .preview-area {
     background: #2a2a2a;
     border-radius: 12px;
@@ -266,6 +294,13 @@ h1 {
 
     .upload-item {
         flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .upload-label {
+        text-align: center;
+        min-width: auto;
+        width: 100%;
     }
 
     .controls {
