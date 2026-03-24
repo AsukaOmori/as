@@ -5,26 +5,125 @@ const charCount = document.getElementById('charCount');
 const generateBtn = document.getElementById('generateBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const previewArea = document.getElementById('previewArea');
+const normalFile = document.getElementById('normalFile');
+const sadFile = document.getElementById('sadFile');
+const normalStatus = document.getElementById('normalStatus');
+const sadStatus = document.getElementById('sadStatus');
+const normalUploadBtn = document.getElementById('normalUploadBtn');
+const sadUploadBtn = document.getElementById('sadUploadBtn');
 
-// Preload images
-const images = {
-    normal: new Image(),
-    sad: new Image()
-};
-images.normal.src = 'images/normal.png';
-images.sad.src = 'images/sad.png';
+const DB_NAME = 'horiemonMemeDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'templates';
 
-// Character count
+// Image data stored in memory
+const imageData = { normal: null, sad: null };
+
+// --- IndexedDB helpers ---
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+            req.result.createObjectStore(STORE_NAME);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveImage(key, dataURL) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(dataURL, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function loadImage(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+// --- Load cached images on startup ---
+async function loadCachedImages() {
+    try {
+        for (const key of ['normal', 'sad']) {
+            const dataURL = await loadImage(key);
+            if (dataURL) {
+                imageData[key] = dataURL;
+                const statusEl = key === 'normal' ? normalStatus : sadStatus;
+                const btnEl = key === 'normal' ? normalUploadBtn : sadUploadBtn;
+                statusEl.textContent = '設定済み';
+                btnEl.classList.add('loaded');
+                btnEl.querySelector('input').nextSibling
+                    ? (btnEl.childNodes.forEach(n => {
+                        if (n.nodeType === 3) n.textContent = '変更';
+                    }))
+                    : null;
+                // Update button text
+                Array.from(btnEl.childNodes).forEach(n => {
+                    if (n.nodeType === Node.TEXT_NODE) n.textContent = '変更';
+                });
+            }
+        }
+    } catch (e) {
+        // IndexedDB not available, continue without cache
+    }
+}
+
+// --- File upload handlers ---
+function handleFileUpload(file, key) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const dataURL = e.target.result;
+            imageData[key] = dataURL;
+
+            const statusEl = key === 'normal' ? normalStatus : sadStatus;
+            const btnEl = key === 'normal' ? normalUploadBtn : sadUploadBtn;
+            statusEl.textContent = '設定済み';
+            btnEl.classList.add('loaded');
+            Array.from(btnEl.childNodes).forEach(n => {
+                if (n.nodeType === Node.TEXT_NODE) n.textContent = '変更';
+            });
+
+            try {
+                await saveImage(key, dataURL);
+            } catch (e) {
+                // Cache save failed, still works for this session
+            }
+            resolve();
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+normalFile.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFileUpload(e.target.files[0], 'normal');
+});
+
+sadFile.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFileUpload(e.target.files[0], 'sad');
+});
+
+// --- Character count ---
 textInput.addEventListener('input', () => {
     charCount.textContent = textInput.value.length;
 });
 
-// Get selected version
+// --- Get selected version ---
 function getSelectedVersion() {
     return document.querySelector('input[name="version"]:checked').value;
 }
 
-// Draw meme on canvas
+// --- Generate meme ---
 function generateMeme() {
     const text = textInput.value.trim();
     if (!text) {
@@ -33,31 +132,36 @@ function generateMeme() {
     }
 
     const version = getSelectedVersion();
-    const img = images[version];
+    const data = imageData[version];
 
-    if (!img.complete || img.naturalWidth === 0) {
-        alert('画像の読み込みに失敗しました。images/ フォルダにnormal.pngとsad.pngを配置してください。');
+    if (!data) {
+        const label = version === 'normal' ? '通常（ドヤ顔）' : '悲しい顔';
+        alert(`「${label}」のテンプレート画像を先にアップロードしてください`);
         return;
     }
 
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    const img = new Image();
+    img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
 
-    // Draw the template image
-    ctx.drawImage(img, 0, 0);
+        // Draw the template image
+        ctx.drawImage(img, 0, 0);
 
-    // Black out the original text area (bottom portion of image)
-    const textAreaTop = Math.floor(canvas.height * 0.72);
-    const textAreaHeight = canvas.height - textAreaTop;
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, textAreaTop, canvas.width, textAreaHeight);
+        // Black out the original text area (bottom portion)
+        const textAreaTop = Math.floor(canvas.height * 0.72);
+        const textAreaHeight = canvas.height - textAreaTop;
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, textAreaTop, canvas.width, textAreaHeight);
 
-    // Draw new text
-    drawMemeText(text, textAreaTop, textAreaHeight);
+        // Draw new text
+        drawMemeText(text, textAreaTop, textAreaHeight);
 
-    // Show preview
-    previewArea.style.display = 'block';
-    previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Show preview
+        previewArea.style.display = 'block';
+        previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    img.src = data;
 }
 
 function drawMemeText(text, areaTop, areaHeight) {
@@ -88,20 +192,19 @@ function drawMemeText(text, areaTop, areaHeight) {
     ctx.fillText(text, centerX, centerY);
 }
 
-// Generate button click
+// --- Event listeners ---
 generateBtn.addEventListener('click', generateMeme);
 
-// Also generate on Enter key
 textInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        generateMeme();
-    }
+    if (e.key === 'Enter') generateMeme();
 });
 
-// Download
 downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = 'horiemon-meme.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
 });
+
+// --- Init ---
+loadCachedImages();

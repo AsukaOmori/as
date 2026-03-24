@@ -12,6 +12,28 @@
         <p class="subtitle">「すげぇ○○○らしいじゃん」画像を作ろう</p>
 
         <div class="controls">
+            <div class="image-upload-section">
+                <label>テンプレート画像を設定:</label>
+                <div class="upload-group">
+                    <div class="upload-item">
+                        <span class="upload-label">通常（ドヤ顔）</span>
+                        <label class="upload-btn" id="normalUploadBtn">
+                            <input type="file" accept="image/*" id="normalFile" hidden>
+                            画像を選択
+                        </label>
+                        <span class="upload-status" id="normalStatus"></span>
+                    </div>
+                    <div class="upload-item">
+                        <span class="upload-label">悲しい顔</span>
+                        <label class="upload-btn" id="sadUploadBtn">
+                            <input type="file" accept="image/*" id="sadFile" hidden>
+                            画像を選択
+                        </label>
+                        <span class="upload-status" id="sadStatus"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="version-select">
                 <label>バージョン選択:</label>
                 <div class="radio-group">
