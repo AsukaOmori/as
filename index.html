@@ -11,7 +11,32 @@
         <h1>ホリエモン ミームジェネレーター</h1>
         <p class="subtitle">「すげぇ○○○らしいじゃん」画像を作ろう</p>
 
-        <div class="controls">
+        <!-- 初期設定（画像未登録時のみ表示） -->
+        <div class="controls setup-panel" id="setupPanel" style="display: none;">
+            <p class="setup-title">初期設定：テンプレート画像を登録</p>
+            <p class="setup-desc">一度登録すれば、次回以降は自動で読み込まれます</p>
+            <div class="upload-group">
+                <div class="upload-item">
+                    <span class="upload-label">通常（ドヤ顔）</span>
+                    <label class="upload-btn" id="normalUploadBtn">
+                        <input type="file" accept="image/*" id="normalFile" hidden>
+                        画像を選択
+                    </label>
+                    <span class="upload-status" id="normalStatus">未登録</span>
+                </div>
+                <div class="upload-item">
+                    <span class="upload-label">悲しい顔</span>
+                    <label class="upload-btn" id="sadUploadBtn">
+                        <input type="file" accept="image/*" id="sadFile" hidden>
+                        画像を選択
+                    </label>
+                    <span class="upload-status" id="sadStatus">未登録</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- メイン操作パネル -->
+        <div class="controls" id="mainPanel" style="display: none;">
             <div class="version-select">
                 <label>バージョン選択:</label>
                 <div class="radio-group">
@@ -35,6 +60,7 @@
             </div>
 
             <button id="generateBtn" class="btn-generate">画像を生成する</button>
+            <button id="resetBtn" class="btn-reset">テンプレート画像を変更</button>
         </div>
 
         <div class="preview-area" id="previewArea" style="display: none;">
